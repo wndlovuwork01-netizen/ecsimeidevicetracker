@@ -1,0 +1,39 @@
+:root {
+  --blue-900: #061838;
+  --blue-800: #0b2a5b;
+  --blue-700: #133a7c;
+  --blue-500: #1e60d9;
+  --blue-400: #3a7be0;
+  --blue-300: #6aa3f0;
+  --text-light: #f5f7fb;
+  --text-dark: #1b1f2a;
+  --bg-light: #edf1f9;
+  --bg-dark: #0b1b39;
+}
+
+.bg-primary-gradient {
+  background: linear-gradient(90deg, var(--blue-900), var(--blue-700));
+}
+.bg-secondary-gradient {
+  background: linear-gradient(90deg, var(--blue-700), var(--blue-500));
+}
+
+.theme-light {
+  background-color: var(--bg-light);
+  color: var(--text-dark);
+}
+.theme-dark {
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+}
+
+.card { border: none; }
+.card-header { border-bottom: none; }
+
+.btn-primary { background-color: var(--blue-500); border-color: var(--blue-500); }
+.btn-primary:hover { background-color: var(--blue-400); border-color: var(--blue-400); }
+
+.alert-info { background-color: rgba(58, 123, 224, 0.15); border-color: var(--blue-300); }
+
+/* Leaflet color tweaks for dark theme */
+.theme-dark .leaflet-container { background: #061838; }

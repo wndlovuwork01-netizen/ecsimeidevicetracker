@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="row">
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-secondary-gradient text-white">Import Devices (Admin)</div>
+        <div class="card-body">
+          <form method="post" action="{{ url_for('import_data') }}" enctype="multipart/form-data">
+            <div class="mb-3">
+              <label for="file" class="form-label">JSON File</label>
+              <input type="file" class="form-control" id="file" name="file" accept="application/json" required />
+            </div>
+            <button type="submit" class="btn btn-primary">Import</button>
+          </form>
+          <div class="alert alert-info mt-3">Imported devices are merged by IMEI/phone if they do not already exist.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

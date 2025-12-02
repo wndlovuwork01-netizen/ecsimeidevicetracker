@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="row">
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-secondary-gradient text-white">Onboard via SMS</div>
+        <div class="card-body">
+          <p class="text-muted">Send an install link for the companion agent.</p>
+          <form method="post" action="{{ url_for('onboard_sms') }}">
+            <div class="mb-3">
+              <label for="phone" class="form-label">Recipient Phone (E.164)</label>
+              <input type="text" class="form-control" id="phone" name="phone" placeholder="e.g., +15551234567" required />
+            </div>
+            <div class="mb-2">
+              <span class="form-text">Install link:</span>
+              <div><code>{{ agent_url }}</code></div>
+            </div>
+            <button type="submit" class="btn btn-primary">Send SMS</button>
+          </form>
+          <hr />
+          <div class="mt-2">
+            <a class="btn btn-outline-secondary" href="{{ url_for('agent_download') }}">Download Android Agent Project (ZIP)</a>
+          </div>
+          <div class="alert alert-info mt-3">
+            Configure Vonage in environment: <code>VONAGE_API_KEY</code>, <code>VONAGE_API_SECRET</code>, <code>VONAGE_FROM_NUMBER</code>.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

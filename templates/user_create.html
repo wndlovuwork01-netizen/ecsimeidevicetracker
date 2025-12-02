@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-secondary-gradient text-white">Create User (Admin)</div>
+        <div class="card-body">
+          <form method="post" action="{{ url_for('create_user') }}">
+            <div class="mb-3">
+              <label for="username" class="form-label">Username</label>
+              <input type="text" class="form-control" id="username" name="username" required />
+            </div>
+            <div class="mb-3">
+              <label for="password" class="form-label">Password</label>
+              <input type="password" class="form-control" id="password" name="password" required />
+            </div>
+            <div class="mb-3">
+              <label for="role" class="form-label">Role</label>
+              <select class="form-select" id="role" name="role">
+                <option value="viewer">viewer</option>
+                <option value="admin">admin</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="phone" class="form-label">Phone (for 2FA)</label>
+              <input type="text" class="form-control" id="phone" name="phone" placeholder="+15551234567" />
+              <div class="form-text">Use E.164 format, e.g. +15551234567.</div>
+            </div>
+            <button type="submit" class="btn btn-primary">Create</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

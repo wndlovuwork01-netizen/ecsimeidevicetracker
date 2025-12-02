@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="row">
+    <div class="col-12 col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-secondary-gradient text-white">Add Device</div>
+        <div class="card-body">
+          <form method="post" action="{{ url_for('add_device') }}">
+            <div class="mb-3">
+              <label for="owner" class="form-label">Owner (optional)</label>
+              <input type="text" class="form-control" id="owner" name="owner" value="{{ form.owner or '' }}" placeholder="Device owner name" />
+            </div>
+            <div class="mb-3">
+              <label for="imei" class="form-label">IMEI (15 digits)</label>
+              <input type="text" class="form-control" id="imei" name="imei" value="{{ form.imei or '' }}" placeholder="e.g., 356938035643809" />
+            </div>
+            <div class="mb-3">
+              <label for="phone" class="form-label">Phone Number (E.164)</label>
+              <input type="text" class="form-control" id="phone" name="phone" value="{{ form.phone or '' }}" placeholder="e.g., +15551234567" />
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a class="btn btn-outline-secondary" href="{{ url_for('index') }}">Back</a>
+          </form>
+        </div>
+      </div>
+      <div class="alert alert-info mt-3">
+        This dashboard only shows location if the device sends updates via a companion app/agent you control and the user consents.
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{
+  "devices": [],
+  "users": [
+    {
+      "username": "ECSadmin",
+      "password_hash": "scrypt:32768:8:1$zo9X8bXCHqx17SVp$e9848c7ba4586a3e65b2b7810804e0fc82ad1261e1e038fc2fad8535aef08428b5001ae9edfb340d3e095aa6a6a454bbe08fece2f11f2973650300dd0f7ed77e",
+      "role": "admin"
+    }
+  ]
+}

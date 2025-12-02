@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="row g-4">
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-secondary-gradient text-white">Search Device</div>
+        <div class="card-body">
+          <form method="post" action="{{ url_for('search') }}">
+            <div class="mb-3">
+              <label for="query" class="form-label">IMEI or Phone Number</label>
+              <input type="text" class="form-control" id="query" name="query" placeholder="e.g., 356938035643809 or +15551234567" required />
+            </div>
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary">Search</button>
+              <a class="btn btn-outline-secondary" href="{{ url_for('add_device') }}">Add Device</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {% if query is defined %}
+      <div class="col-12 col-lg-6">
+        <div class="card shadow-sm">
+          <div class="card-header bg-info text-white">Result</div>
+          <div class="card-body">
+            <p class="mb-2"><strong>Query:</strong> {{ query }}</p>
+            {% if result %}
+              <ul class="list-unstyled mb-3">
+                {% if result.owner %}<li><strong>Owner:</strong> {{ result.owner }}</li>{% endif %}
+                {% if result.imei %}<li><strong>IMEI:</strong> {{ result.imei }}</li>{% endif %}
+                {% if result.phone %}<li><strong>Phone:</strong> {{ result.phone }}</li>{% endif %}
+                {% if result.carrier %}<li><strong>Carrier:</strong> {{ result.carrier }}</li>{% endif %}
+                {% if result.last_update %}<li><strong>Last Update:</strong> {{ result.last_update }}</li>{% endif %}
+              </ul>
+              {% if result.last_location %}
+                <div id="map" style="height: 360px;" data-lat="{{ result.last_location.lat }}" data-lng="{{ result.last_location.lng }}"></div>
+                {% if result.locations and result.locations|length > 0 %}
+                  <script>
+                    window.DEVICE_LOCATIONS = {{ result.locations|tojson }};
+                  </script>
+                {% endif %}
+              {% else %}
+                <div class="alert alert-warning">No live location yet. The device must send updates from its companion app or agent.</div>
+              {% endif %}
+              {% if result.locations and result.locations|length > 0 %}
+                <hr />
+                <p class="text-muted">Recent location updates:</p>
+                <ul class="list-unstyled">
+                  {% for loc in result.locations|reverse %}
+                    <li>({{ loc.lat }}, {{ loc.lng }}) at {{ loc.ts }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            {% else %}
+              <div class="alert alert-danger">No registered device found for this query.</div>
+            {% endif %}
+
+            {% if coarse %}
+              <hr />
+              <p class="text-muted">Coarse info for phone numbers:</p>
+              <ul class="list-unstyled">
+                <li><strong>Region:</strong> {{ coarse.region or 'Unknown' }}</li>
+                <li><strong>Carrier:</strong> {{ coarse.carrier or 'Unknown' }}</li>
+              </ul>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

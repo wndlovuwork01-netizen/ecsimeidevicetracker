@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="row">
+    <div class="col-12 col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-secondary-gradient text-white">Device Token (Admin)</div>
+        <div class="card-body">
+          <form method="post" action="{{ url_for('device_token') }}">
+            <div class="mb-3">
+              <label for="query" class="form-label">Find by IMEI or Phone</label>
+              <input type="text" class="form-control" id="query" name="query" placeholder="e.g., 356938035643809 or +15551234567" required />
+            </div>
+            <button type="submit" class="btn btn-primary">Lookup</button>
+          </form>
+          {% if device %}
+            <hr />
+            <p><strong>Owner:</strong> {{ device.owner or 'N/A' }}</p>
+            {% if device.imei %}<p><strong>IMEI:</strong> {{ device.imei }}</p>{% endif %}
+            {% if device.phone %}<p><strong>Phone:</strong> {{ device.phone }}</p>{% endif %}
+            <div class="mb-3">
+              <label class="form-label">API Token</label>
+              <div class="input-group">
+                <input type="text" class="form-control" value="{{ device.api_token }}" readonly />
+                <form method="post" action="{{ url_for('device_token') }}">
+                  <input type="hidden" name="query" value="{{ device.imei or device.phone }}" />
+                  <input type="hidden" name="regen" value="1" />
+                  <button class="btn btn-outline-danger" type="submit">Regenerate</button>
+                </form>
+              </div>
+              <div class="form-text">Provide this token to the device agent. Regenerating invalidates the old token.</div>
+            </div>
+            <div class="alert alert-info">
+              Agent should POST: <code>{"imei":"...","phone":"+15551234567","lat":...,"lng":...,"token":"..."}</code>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
