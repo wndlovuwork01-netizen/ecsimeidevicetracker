@@ -221,6 +221,10 @@ def require_role(role):
 def index():
     return render_template("index.html", user=session.get("user"))
 
+@app.context_processor
+def inject_year():
+    return {'current_year': datetime.utcnow().year}
+
 
 @app.route("/add", methods=["GET", "POST"])
 def add_device():
@@ -285,6 +289,9 @@ def add_device():
 
 @app.route("/search", methods=["POST"])
 def search():
+    gate = require_login()
+    if gate:
+        return gate
     query = request.form.get("query", "").strip()
     if not query:
         flash("Enter IMEI or phone number.", "error")

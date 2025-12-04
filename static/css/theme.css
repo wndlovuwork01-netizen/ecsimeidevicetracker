@@ -26,7 +26,29 @@
   background-color: var(--bg-dark);
   color: var(--text-light);
 }
+html, body {
+    height: 100%;        /* Full viewport height */
+    margin: 0;           /* Remove default margin */
+}
 
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;   /* Ensures footer sticks to bottom if content is short */
+}
+.social-links i {
+    transition: transform 0.25s ease;
+}
+
+.social-links i:hover {
+    transform: scale(1.25);
+}
+main {
+    flex: 1;             /* Takes up remaining space */
+}
+footer {
+    flex-shrink: 0; /* don’t shrink */
+}
 .card { border: none; }
 .card-header { border-bottom: none; }
 

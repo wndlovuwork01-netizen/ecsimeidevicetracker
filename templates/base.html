@@ -4,11 +4,49 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Device Tracker</title>
+
+    <!-- Bootstrap -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+
+    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Theme -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}" />
+
+    <!-- Particles.js -->
+    <script src="https://cdn.jsdelivr.net/npm/particles.js"></script>
+
+    <style>
+      /* Background container */
+      #particles-bg {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: -1;
+          pointer-events: none;
+      }
+
+      /* Ensure full-height layout */
+      body {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+      }
+
+      main {
+          flex: 1;
+      }
+    </style>
   </head>
+
   <body class="theme-light">
+
+    <!-- Live Particles Layer -->
+    <div id="particles-bg"></div>
+
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary-gradient">
       <div class="container-fluid">
         <a class="navbar-brand" href="{{ url_for('index') }}">Device Tracker</a>
@@ -16,17 +54,20 @@
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navItems">
           <span class="navbar-toggler-icon"></span>
         </button>
+
         <div class="collapse navbar-collapse" id="navItems">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             <li class="nav-item"><a class="nav-link" href="{{ url_for('add_device') }}">Add Device</a></li>
             <li class="nav-item"><a class="nav-link" href="{{ url_for('onboard_sms') }}">Onboard via SMS</a></li>
             <li class="nav-item"><a class="nav-link" href="{{ url_for('export') }}">Export</a></li>
             <li class="nav-item"><a class="nav-link" href="{{ url_for('import_data') }}">Import</a></li>
+
             {% if session.get('user') and session.get('user').role == 'admin' %}
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('create_user') }}">Create User</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('device_token') }}">Device Token</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('create_user') }}">Create User</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('device_token') }}">Device Token</a></li>
             {% endif %}
           </ul>
+
           <div class="d-flex">
             {% if session.get('user') %}
               <span class="navbar-text me-3">Hello, {{ session.get('user').username }} ({{ session.get('user').role }})</span>
@@ -38,20 +79,65 @@
         </div>
       </div>
     </nav>
+
     <main class="container py-4">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           <div class="mb-3">
             {% for category, message in messages %}
-              <div class="alert alert-{{ 'danger' if category == 'error' else category }}" role="alert">{{ message }}</div>
+              <div class="alert alert-{{ 'danger' if category == 'error' else category }}" role="alert">
+                {{ message }}
+              </div>
             {% endfor %}
           </div>
         {% endif %}
       {% endwith %}
+
       {% block content %}{% endblock %}
     </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-dark text-white text-center py-3 mt-4">
+        &copy; {{ current_year }} Emazweni Cyber Solutions - IMEI Device Tracker. All rights reserved.
+    </footer>
+
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+    <!-- Initialize Animated Color-Shifting Particles -->
+    <script>
+      particlesJS("particles-bg", {
+        "particles": {
+          "number": { "value": 80 },
+          "size": { "value": 3 },
+          "move": { "enable": true, "speed": 2 },
+          "opacity": {
+            "value": 0.6,
+            "anim": { "enable": true, "speed": 0.8, "opacity_min": 0.2 }
+          },
+          "color": {
+            "value": ["#3a7be0", "#00ffea", "#ff00c3", "#ffcc00"]
+          },
+          "line_linked": {
+            "enable": true,
+            "color": "#ffffff",
+            "opacity": 0.3
+          }
+        },
+        "interactivity": {
+          "events": {
+            "onhover": { "enable": true, "mode": "grab" },
+            "onclick": { "enable": true, "mode": "push" }
+          },
+          "modes": {
+            "grab": { "distance": 200, "line_linked": { "opacity": 0.6 } },
+            "push": { "particles_nb": 4 }
+          }
+        },
+        "retina_detect": true
+      });
+    </script>
   </body>
-  </html>
+</html>

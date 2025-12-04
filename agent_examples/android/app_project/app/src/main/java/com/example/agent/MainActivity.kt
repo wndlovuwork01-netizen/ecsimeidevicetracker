@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sharedPrefs: SharedPreferences
 
     private val TAG = "MainActivity"
-    private val serverRoot = "http://192.168.1.11:5000"
+    private val serverRoot = "https://ecsimeidevicetracker.onrender.com"
     private val client = OkHttpClient()
 
     private val permissionLauncher = registerForActivityResult(

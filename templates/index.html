@@ -1,17 +1,102 @@
 {% extends 'base.html' %}
 {% block content %}
+
+<!-- Particles.js -->
+<script src="https://cdn.jsdelivr.net/npm/particles.js"></script>
+
+<style>
+  /* Background */
+  body {
+      background-image: url("{{ url_for('static', filename='img/background.avif') }}");
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-position: center;
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+  }
+
+  /* Particles Layer */
+  #particles-js {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      top: 0;
+      left: 0;
+  }
+
+  /* Main content grows before footer */
+  main {
+      flex: 1;
+  }
+
+  /* Search card styling */
+  .card {
+      background-color: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(3px);
+  }
+
+  /* Floating Right Social Card */
+  .social-floating {
+      position: fixed;
+      left: 80px;
+      top: 290px;
+      width: 560px;
+      z-index: 9999;
+  }
+
+  /* On small screens, move card under search */
+  @media (max-width: 992px) {
+      .social-floating {
+          position: relative;
+          width: 100%;
+          right: 0;
+          top: 0;
+          margin-top: 20px;
+      }
+  }
+
+  .social-icons img.social-icon {
+    width: 45px;
+    height: 45px;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+}
+
+.social-icons img.social-icon:hover {
+    transform: scale(1.15);
+}
+  .social-links i {
+      transition: 0.2s ease;
+  }
+  .social-links i:hover {
+      transform: scale(1.25);
+  }
+</style>
+
+<!-- Particles container -->
+<div id="particles-js"></div>
+
+<main class="container py-4">
+
   <div class="row g-4">
+
+    <!-- Search Card -->
     <div class="col-12 col-lg-6">
       <div class="card shadow-sm">
         <div class="card-header bg-secondary-gradient text-white">Search Device</div>
         <div class="card-body">
           <form method="post" action="{{ url_for('search') }}">
             <div class="mb-3">
-              <label for="query" class="form-label">IMEI or Phone Number</label>
-              <input type="text" class="form-control" id="query" name="query" placeholder="e.g., 356938035643809 or +15551234567" required />
+              <label class="form-label">IMEI or Phone Number</label>
+              <input type="text" class="form-control" name="query"
+                     placeholder="e.g., 356938035643809 or +15551234567" required>
             </div>
             <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary">Search</button>
+              <button class="btn btn-primary" type="submit">Search</button>
               <a class="btn btn-outline-secondary" href="{{ url_for('add_device') }}">Add Device</a>
             </div>
           </form>
@@ -19,54 +104,97 @@
       </div>
     </div>
 
+    <!-- FLOATING RIGHT SOCIAL MEDIA CARD -->
+    <div class="social-floating">
+      <div class="card shadow-lg">
+        <div class="card-header bg-secondary-gradient text-center text-white">
+          Connect With Emazweni Cyber Solutions @
+        </div>
+            <div class="card-body">
+    <div class="d-flex justify-content-center flex-wrap gap-4 social-icons">
+      <a href="www.linkedin.com/in/emazweni-cyber-solutions-a79476348" target="_blank">
+        <img src="{{ url_for('static', filename='icons/linkedin.png') }}" alt="LinkedIn" class="social-icon">
+      </a>
+
+      <a href="https://www.facebook.com/share/19fPcpJTMK/" target="_blank">
+        <img src="{{ url_for('static', filename='icons/facebook.png') }}" alt="Facebook" class="social-icon">
+      </a>
+
+      <a href="https://your-instagram-url" target="_blank">
+        <img src="{{ url_for('static', filename='icons/instagram.png') }}" alt="Instagram" class="social-icon">
+      </a>
+
+      <a href="https://wa.me/+263771112812" target="_blank">
+        <img src="{{ url_for('static', filename='icons/whatsapp.png') }}" alt="WhatsApp" class="social-icon">
+      </a>
+
+      <a href="https://www.tiktok.com/@emazwenics?_r=1&_t=ZM-91ujsA0z0Dw" target="_blank">
+        <img src="{{ url_for('static', filename='icons/tiktok.png') }}" alt="TikTok" class="social-icon">
+      </a>
+
+      <a href="https://emazwenics.com" target="_blank">
+        <img src="{{ url_for('static', filename='icons/website.jpg') }}" alt="Website" class="social-icon">
+      </a>
+    </div>
+  </div>
+      </div>
+    </div>
+
+    <!-- Result Card -->
     {% if query is defined %}
-      <div class="col-12 col-lg-6">
-        <div class="card shadow-sm">
-          <div class="card-header bg-info text-white">Result</div>
-          <div class="card-body">
-            <p class="mb-2"><strong>Query:</strong> {{ query }}</p>
-            {% if result %}
-              <ul class="list-unstyled mb-3">
-                {% if result.owner %}<li><strong>Owner:</strong> {{ result.owner }}</li>{% endif %}
-                {% if result.imei %}<li><strong>IMEI:</strong> {{ result.imei }}</li>{% endif %}
-                {% if result.phone %}<li><strong>Phone:</strong> {{ result.phone }}</li>{% endif %}
-                {% if result.carrier %}<li><strong>Carrier:</strong> {{ result.carrier }}</li>{% endif %}
-                {% if result.last_update %}<li><strong>Last Update:</strong> {{ result.last_update }}</li>{% endif %}
-              </ul>
-              {% if result.last_location %}
-                <div id="map" style="height: 360px;" data-lat="{{ result.last_location.lat }}" data-lng="{{ result.last_location.lng }}"></div>
-                {% if result.locations and result.locations|length > 0 %}
-                  <script>
-                    window.DEVICE_LOCATIONS = {{ result.locations|tojson }};
-                  </script>
-                {% endif %}
-              {% else %}
-                <div class="alert alert-warning">No live location yet. The device must send updates from its companion app or agent.</div>
-              {% endif %}
-              {% if result.locations and result.locations|length > 0 %}
-                <hr />
-                <p class="text-muted">Recent location updates:</p>
-                <ul class="list-unstyled">
-                  {% for loc in result.locations|reverse %}
-                    <li>({{ loc.lat }}, {{ loc.lng }}) at {{ loc.ts }}</li>
-                  {% endfor %}
-                </ul>
-              {% endif %}
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-info text-white">Result</div>
+        <div class="card-body">
+
+          <p><strong>Query:</strong> {{ query }}</p>
+
+          {% if result %}
+            <ul class="list-unstyled">
+              {% if result.owner %}<li><strong>Owner:</strong> {{ result.owner }}</li>{% endif %}
+              {% if result.imei %}<li><strong>IMEI:</strong> {{ result.imei }}</li>{% endif %}
+              {% if result.phone %}<li><strong>Phone:</strong> {{ result.phone }}</li>{% endif %}
+              {% if result.carrier %}<li><strong>Carrier:</strong> {{ result.carrier }}</li>{% endif %}
+              {% if result.last_update %}<li><strong>Last Update:</strong> {{ result.last_update }}</li>{% endif %}
+            </ul>
+
+            {% if result.last_location %}
+              <div id="map" style="height: 360px;"
+                   data-lat="{{ result.last_location.lat }}"
+                   data-lng="{{ result.last_location.lng }}"></div>
             {% else %}
-              <div class="alert alert-danger">No registered device found for this query.</div>
+              <div class="alert alert-warning">No live location yet.</div>
             {% endif %}
 
-            {% if coarse %}
-              <hr />
-              <p class="text-muted">Coarse info for phone numbers:</p>
-              <ul class="list-unstyled">
-                <li><strong>Region:</strong> {{ coarse.region or 'Unknown' }}</li>
-                <li><strong>Carrier:</strong> {{ coarse.carrier or 'Unknown' }}</li>
-              </ul>
-            {% endif %}
-          </div>
+          {% else %}
+            <div class="alert alert-danger">No device found.</div>
+          {% endif %}
         </div>
       </div>
+    </div>
     {% endif %}
+
   </div>
+
+</main>
+
+<!-- Particles.js Init -->
+<script>
+  particlesJS("particles-js", {
+    "particles": {
+      "number": { "value": 60 },
+      "color": { "value": "#ffffff" },
+      "shape": { "type": "circle" },
+      "opacity": { "value": 0.3 },
+      "size": { "value": 3 },
+      "line_linked": { "enable": true, "distance": 150, "color": "#ffffff", "opacity": 0.2, "width": 1 },
+      "move": { "enable": true, "speed": 2 }
+    },
+    "interactivity": {
+      "events": { "onhover": { "enable": true, "mode": "repulse" } }
+    },
+    "retina_detect": true
+  });
+</script>
+
 {% endblock %}

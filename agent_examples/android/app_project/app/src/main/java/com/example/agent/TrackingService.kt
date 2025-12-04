@@ -34,7 +34,7 @@ class TrackingService : Service() {
     private val client = OkHttpClient()
     private val TAG = "TrackingService"
 
-    private var serverRoot = "http://192.168.1.11:5000"
+    private var serverRoot = "https://ecsimeidevicetracker.onrender.com"
 
     private var deviceImei: String = ""
     private var devicePhone: String = ""
