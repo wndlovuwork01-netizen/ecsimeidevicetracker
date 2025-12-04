@@ -2,3 +2,5 @@ flask
 phonenumbers
 vonage
 requests
+gunicorn
+werkzeug
