@@ -95,8 +95,14 @@ def lookup_device_db(imei=None, phone=None):
         if not row:
             return None
         device = dict(row)
-        c.execute("SELECT lat, lng, ts FROM locations WHERE device_id = ? ORDER BY ts ASC", (row["id"],))
-        locs = [dict(r) for r in c.fetchall()]
+        c.execute("""
+            SELECT lat, lng, ts 
+            FROM locations 
+            WHERE device_id = ? 
+            ORDER BY ts DESC 
+            LIMIT 30
+        """, (row["id"],))
+        locs = [dict(r) for r in reversed(c.fetchall())]
         device["locations"] = locs
         if device.get("last_lat") is not None and device.get("last_lng") is not None:
             device["last_location"] = {"lat": device["last_lat"], "lng": device["last_lng"]}

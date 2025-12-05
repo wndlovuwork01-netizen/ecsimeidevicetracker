@@ -33,47 +33,46 @@
       flex: 1;
   }
 
-  /* Search card styling */
-  .card {
-      background-color: rgba(255, 255, 255, 0.88);
-      backdrop-filter: blur(3px);
-  }
-
-  /* Floating Right Social Card */
+  /* Floating Left Social Card (bottom-left) */
   .social-floating {
       position: fixed;
-      left: 80px;
-      top: 290px;
-      width: 560px;
+      bottom: 40px;
+      left: 85px;
+      width: 100%;
+      max-width: 500px; /* same as search card */
       z-index: 9999;
   }
+  .social-floating .card {
+      background-color: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(3px);
+      margin-bottom: 20px;
+  }
 
-  /* On small screens, move card under search */
-  @media (max-width: 992px) {
+  /* Search card (top-left, scrollable) */
+  .search-card {
+      margin-bottom: 20px;
+  }
+
+  /* Social icons */
+  .social-icons img.social-icon {
+      width: 45px;
+      height: 45px;
+      object-fit: contain;
+      transition: transform 0.2s ease;
+  }
+  .social-icons img.social-icon:hover {
+      transform: scale(1.15);
+  }
+
+  /* Mobile view */
+  @media (max-width: 991px) {
       .social-floating {
           position: relative;
-          width: 100%;
-          right: 0;
-          top: 0;
+          bottom: auto;
+          left: auto;
+          max-width: 100%;
           margin-top: 20px;
       }
-  }
-
-  .social-icons img.social-icon {
-    width: 45px;
-    height: 45px;
-    object-fit: contain;
-    transition: transform 0.2s ease;
-}
-
-.social-icons img.social-icon:hover {
-    transform: scale(1.15);
-}
-  .social-links i {
-      transition: 0.2s ease;
-  }
-  .social-links i:hover {
-      transform: scale(1.25);
   }
 </style>
 
@@ -81,12 +80,10 @@
 <div id="particles-js"></div>
 
 <main class="container py-4">
-
   <div class="row g-4">
-
-    <!-- Search Card -->
+    <!-- Search Card (LEFT) -->
     <div class="col-12 col-lg-6">
-      <div class="card shadow-sm">
+      <div class="card shadow-sm search-card">
         <div class="card-header bg-secondary-gradient text-white">Search Device</div>
         <div class="card-body">
           <form method="post" action="{{ url_for('search') }}">
@@ -104,44 +101,8 @@
       </div>
     </div>
 
-    <!-- FLOATING RIGHT SOCIAL MEDIA CARD -->
-    <div class="social-floating">
-      <div class="card shadow-lg">
-        <div class="card-header bg-secondary-gradient text-center text-white">
-          Connect With Emazweni Cyber Solutions @
-        </div>
-            <div class="card-body">
-    <div class="d-flex justify-content-center flex-wrap gap-4 social-icons">
-      <a href="www.linkedin.com/in/emazweni-cyber-solutions-a79476348" target="_blank">
-        <img src="{{ url_for('static', filename='icons/linkedin.png') }}" alt="LinkedIn" class="social-icon">
-      </a>
-
-      <a href="https://www.facebook.com/share/19fPcpJTMK/" target="_blank">
-        <img src="{{ url_for('static', filename='icons/facebook.png') }}" alt="Facebook" class="social-icon">
-      </a>
-
-      <a href="https://your-instagram-url" target="_blank">
-        <img src="{{ url_for('static', filename='icons/instagram.png') }}" alt="Instagram" class="social-icon">
-      </a>
-
-      <a href="https://wa.me/+263771112812" target="_blank">
-        <img src="{{ url_for('static', filename='icons/whatsapp.png') }}" alt="WhatsApp" class="social-icon">
-      </a>
-
-      <a href="https://www.tiktok.com/@emazwenics?_r=1&_t=ZM-91ujsA0z0Dw" target="_blank">
-        <img src="{{ url_for('static', filename='icons/tiktok.png') }}" alt="TikTok" class="social-icon">
-      </a>
-
-      <a href="https://emazwenics.com" target="_blank">
-        <img src="{{ url_for('static', filename='icons/website.jpg') }}" alt="Website" class="social-icon">
-      </a>
-    </div>
-  </div>
-      </div>
-    </div>
-
     <!-- Result Card -->
-    {% if query is defined %}
+    {% if result is defined and result %}
     <div class="col-12 col-lg-6">
       <div class="card shadow-sm">
         <div class="card-header bg-info text-white">Result</div>
@@ -158,10 +119,8 @@
               {% if result.last_update %}<li><strong>Last Update:</strong> {{ result.last_update }}</li>{% endif %}
             </ul>
 
-            {% if result.last_location %}
-              <div id="map" style="height: 360px;"
-                   data-lat="{{ result.last_location.lat }}"
-                   data-lng="{{ result.last_location.lng }}"></div>
+            {% if result.locations and result.locations|length > 0 %}
+              <div id="map" style="height: 360px;"></div>
             {% else %}
               <div class="alert alert-warning">No live location yet.</div>
             {% endif %}
@@ -173,10 +132,46 @@
       </div>
     </div>
     {% endif %}
-
   </div>
-
 </main>
+
+<!-- Floating Left Social Media Card -->
+<div class="social-floating">
+  <div class="card shadow-sm">
+    <div class="card-header bg-secondary-gradient text-center text-white">
+      Connect With Emazweni Cyber Solutions @
+    </div>
+    <div class="card-body">
+      <div class="d-flex justify-content-center flex-wrap gap-4 social-icons">
+
+        <a href="https://www.linkedin.com/in/emazweni-cyber-solutions-a79476348" target="_blank">
+          <img src="{{ url_for('static', filename='icons/linkedin.png') }}" class="social-icon">
+        </a>
+
+        <a href="https://www.facebook.com/share/19fPcpJTMK/" target="_blank">
+          <img src="{{ url_for('static', filename='icons/facebook.png') }}" class="social-icon">
+        </a>
+
+        <a href="https://your-instagram-url" target="_blank">
+          <img src="{{ url_for('static', filename='icons/instagram.png') }}" class="social-icon">
+        </a>
+
+        <a href="https://wa.me/263771112812" target="_blank">
+          <img src="{{ url_for('static', filename='icons/whatsapp.png') }}" class="social-icon">
+        </a>
+
+        <a href="https://www.tiktok.com/@emazwenics" target="_blank">
+          <img src="{{ url_for('static', filename='icons/tiktok.png') }}" class="social-icon">
+        </a>
+
+        <a href="https://emazwenics.com" target="_blank">
+          <img src="{{ url_for('static', filename='icons/website.jpg') }}" class="social-icon">
+        </a>
+
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Particles.js Init -->
 <script>
@@ -196,5 +191,30 @@
     "retina_detect": true
   });
 </script>
+
+<!-- Leaflet Map for Latest 30 Locations -->
+{% if result is defined and result.locations and result.locations|length > 0 %}
+<script>
+  var locations = {{ result.locations[-30:]|tojson }};
+  var lastLoc = locations[locations.length - 1];
+  var map = L.map('map').setView([lastLoc.lat, lastLoc.lng], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  // Draw trail line
+  var trail = locations.map(loc => [loc.lat, loc.lng]);
+  var polyline = L.polyline(trail, {color: 'red'}).addTo(map);
+
+  map.fitBounds(polyline.getBounds());
+
+  // Draw circle markers
+  locations.forEach(function(loc) {
+      L.circleMarker([loc.lat, loc.lng], {radius: 5, color: 'blue'}).addTo(map);
+  });
+</script>
+{% endif %}
 
 {% endblock %}
