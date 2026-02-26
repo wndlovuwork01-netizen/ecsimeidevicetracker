@@ -99,10 +99,10 @@ def lookup_device_db(imei=None, phone=None):
             SELECT lat, lng, ts 
             FROM locations 
             WHERE device_id = ? 
-            ORDER BY ts DESC 
-            LIMIT 30
-        """, (row["id"],))
-        locs = [dict(r) for r in reversed(c.fetchall())]
+              AND ts >= (SELECT datetime(MAX(ts), '-5 hours') FROM locations WHERE device_id = ?)
+            ORDER BY ts ASC
+        """, (row["id"], row["id"]))
+        locs = [dict(r) for r in c.fetchall()]
         device["locations"] = locs
         if device.get("last_lat") is not None and device.get("last_lng") is not None:
             device["last_location"] = {"lat": device["last_lat"], "lng": device["last_lng"]}
@@ -337,17 +337,21 @@ def validate_device():
     if not token or (not imei and not phone):
         return jsonify({"ok": False, "error": "missing parameters"}), 400
 
+    # Select device by IMEI or phone
     conn = db_connect()
     try:
         c = conn.cursor()
-
-        # Select device by IMEI or phone
+        row = None
         if imei:
             c.execute("SELECT api_token FROM devices WHERE imei = ?", (imei,))
-        else:
-            c.execute("SELECT api_token FROM devices WHERE phone = ?", (phone,))
+            row = c.fetchone()
+        
+        if not row and phone:
+            normalized = normalize_phone(phone)
+            if normalized:
+                c.execute("SELECT api_token FROM devices WHERE phone = ?", (normalized,))
+                row = c.fetchone()
 
-        row = c.fetchone()
         if not row:
             return jsonify({"ok": False, "error": "device not found"}), 404
 
@@ -373,26 +377,37 @@ def location_update():
 
     # Required fields
     if not token or (not imei and not phone) or lat is None or lng is None:
+        print(f"DEBUG: Missing parameters in location_update. token={bool(token)}, imei={imei}, phone={phone}, lat={lat}, lng={lng}")
         return jsonify({"ok": False, "error": "missing parameters"}), 400
 
     conn = db_connect()
     try:
         c = conn.cursor()
 
-        # Fetch device
+        # Fetch device - try IMEI first, then phone
+        device = None
         if imei:
             c.execute("SELECT id, api_token FROM devices WHERE imei = ?", (imei,))
-        else:
-            c.execute("SELECT id, api_token FROM devices WHERE phone = ?", (phone,))
+            device = c.fetchone()
+        
+        if not device and phone:
+            normalized = normalize_phone(phone)
+            if normalized:
+                c.execute("SELECT id, api_token FROM devices WHERE phone = ?", (normalized,))
+                device = c.fetchone()
+            else:
+                print(f"DEBUG: Could not normalize phone: {phone}")
 
-        device = c.fetchone()
         if not device:
+            print(f"DEBUG: Device not found. imei={imei}, phone={phone}")
             return jsonify({"ok": False, "error": "device not found"}), 404
 
         if token != device["api_token"]:
+            print(f"DEBUG: Invalid token for device {device['id']}. Received: {token}")
             return jsonify({"ok": False, "error": "invalid token"}), 401
 
         device_id = device["id"]
+        print(f"DEBUG: Updating location for device {device_id} at {lat}, {lng}")
 
         # Insert history entry
         c.execute("""

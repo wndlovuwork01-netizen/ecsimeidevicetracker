@@ -106,6 +106,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 
+    {% block scripts %}{% endblock %}
+
     <!-- Initialize Animated Color-Shifting Particles -->
     <script>
       particlesJS("particles-bg", {

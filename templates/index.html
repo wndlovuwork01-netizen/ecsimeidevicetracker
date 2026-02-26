@@ -1,9 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<!-- Particles.js -->
-<script src="https://cdn.jsdelivr.net/npm/particles.js"></script>
-
 <style>
   /* Background */
   body {
@@ -16,16 +13,6 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-  }
-
-  /* Particles Layer */
-  #particles-js {
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      z-index: -1;
-      top: 0;
-      left: 0;
   }
 
   /* Main content grows before footer */
@@ -76,64 +63,60 @@
   }
 </style>
 
-<!-- Particles container -->
-<div id="particles-js"></div>
-
-<main class="container py-4">
-  <div class="row g-4">
-    <!-- Search Card (LEFT) -->
-    <div class="col-12 col-lg-6">
-      <div class="card shadow-sm search-card">
-        <div class="card-header bg-secondary-gradient text-white">Search Device</div>
-        <div class="card-body">
-          <form method="post" action="{{ url_for('search') }}">
-            <div class="mb-3">
-              <label class="form-label">IMEI or Phone Number</label>
-              <input type="text" class="form-control" name="query"
-                     placeholder="e.g., 356938035643809 or +15551234567" required>
-            </div>
-            <div class="d-flex gap-2">
-              <button class="btn btn-primary" type="submit">Search</button>
-              <a class="btn btn-outline-secondary" href="{{ url_for('add_device') }}">Add Device</a>
-            </div>
-          </form>
-        </div>
+<div class="row g-4">
+  <!-- Search Card (LEFT) -->
+  <div class="col-12 col-lg-6">
+    <div class="card shadow-sm search-card">
+      <div class="card-header bg-secondary-gradient text-white">Search Device</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('search') }}">
+          <div class="mb-3">
+            <label class="form-label">IMEI or Phone Number</label>
+            <input type="text" class="form-control" name="query"
+                   placeholder="e.g., 356938035643809 or +15551234567" required>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary" type="submit">Search</button>
+            <a class="btn btn-outline-secondary" href="{{ url_for('add_device') }}">Add Device</a>
+          </div>
+        </form>
       </div>
     </div>
-
-    <!-- Result Card -->
-    {% if result is defined and result %}
-    <div class="col-12 col-lg-6">
-      <div class="card shadow-sm">
-        <div class="card-header bg-info text-white">Result</div>
-        <div class="card-body">
-
-          <p><strong>Query:</strong> {{ query }}</p>
-
-          {% if result %}
-            <ul class="list-unstyled">
-              {% if result.owner %}<li><strong>Owner:</strong> {{ result.owner }}</li>{% endif %}
-              {% if result.imei %}<li><strong>IMEI:</strong> {{ result.imei }}</li>{% endif %}
-              {% if result.phone %}<li><strong>Phone:</strong> {{ result.phone }}</li>{% endif %}
-              {% if result.carrier %}<li><strong>Carrier:</strong> {{ result.carrier }}</li>{% endif %}
-              {% if result.last_update %}<li><strong>Last Update:</strong> {{ result.last_update }}</li>{% endif %}
-            </ul>
-
-            {% if result.locations and result.locations|length > 0 %}
-              <div id="map" style="height: 360px;"></div>
-            {% else %}
-              <div class="alert alert-warning">No live location yet.</div>
-            {% endif %}
-
-          {% else %}
-            <div class="alert alert-danger">No device found.</div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-    {% endif %}
   </div>
-</main>
+
+  <!-- Result Card -->
+  {% if result is defined and result %}
+  <div class="col-12 col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-info text-white">Result</div>
+      <div class="card-body">
+
+        <p><strong>Query:</strong> {{ query }}</p>
+
+        {% if result %}
+          <ul class="list-unstyled">
+            {% if result.owner %}<li><strong>Owner:</strong> {{ result.owner }}</li>{% endif %}
+            {% if result.imei %}<li><strong>IMEI:</strong> {{ result.imei }}</li>{% endif %}
+            {% if result.phone %}<li><strong>Phone:</strong> {{ result.phone }}</li>{% endif %}
+            {% if result.carrier %}<li><strong>Carrier:</strong> {{ result.carrier }}</li>{% endif %}
+            {% if result.last_update %}<li><strong>Last Update:</strong> {{ result.last_update }}</li>{% endif %}
+          </ul>
+
+          {% if result.locations and result.locations|length > 0 %}
+            <p><strong>Route (Past 5 Hours from Last Update):</strong></p>
+            <div id="map" style="height: 360px;"></div>
+          {% else %}
+            <div class="alert alert-warning">No location history found.</div>
+          {% endif %}
+
+        {% else %}
+          <div class="alert alert-danger">No device found.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
 
 <!-- Floating Left Social Media Card -->
 <div class="social-floating">
@@ -173,29 +156,11 @@
   </div>
 </div>
 
-<!-- Particles.js Init -->
-<script>
-  particlesJS("particles-js", {
-    "particles": {
-      "number": { "value": 60 },
-      "color": { "value": "#ffffff" },
-      "shape": { "type": "circle" },
-      "opacity": { "value": 0.3 },
-      "size": { "value": 3 },
-      "line_linked": { "enable": true, "distance": 150, "color": "#ffffff", "opacity": 0.2, "width": 1 },
-      "move": { "enable": true, "speed": 2 }
-    },
-    "interactivity": {
-      "events": { "onhover": { "enable": true, "mode": "repulse" } }
-    },
-    "retina_detect": true
-  });
-</script>
-
-<!-- Leaflet Map for Latest 30 Locations -->
+{% block scripts %}
+<!-- Leaflet Map for Route (Relative to Last Update) -->
 {% if result is defined and result.locations and result.locations|length > 0 %}
 <script>
-  var locations = {{ result.locations[-30:]|tojson }};
+  var locations = {{ result.locations|tojson }};
   var lastLoc = locations[locations.length - 1];
   var map = L.map('map').setView([lastLoc.lat, lastLoc.lng], 13);
 
@@ -206,15 +171,40 @@
 
   // Draw trail line
   var trail = locations.map(loc => [loc.lat, loc.lng]);
-  var polyline = L.polyline(trail, {color: 'red'}).addTo(map);
+  var polyline = L.polyline(trail, {
+      color: 'red',
+      weight: 4,
+      opacity: 0.7,
+      smoothFactor: 1
+  }).addTo(map);
 
   map.fitBounds(polyline.getBounds());
 
-  // Draw circle markers
-  locations.forEach(function(loc) {
-      L.circleMarker([loc.lat, loc.lng], {radius: 5, color: 'blue'}).addTo(map);
+  // Draw markers
+  locations.forEach(function(loc, index) {
+      var isLast = (index === locations.length - 1);
+      var isFirst = (index === 0);
+      
+      var markerOptions = {
+          radius: isLast ? 8 : 4,
+          color: isLast ? 'red' : (isFirst ? 'green' : 'blue'),
+          fillColor: isLast ? '#f03' : (isFirst ? '#0f3' : '#30f'),
+          fillOpacity: 0.8
+      };
+      
+      var marker = L.circleMarker([loc.lat, loc.lng], markerOptions).addTo(map);
+      
+      var popupContent = "<b>Time:</b> " + loc.ts + "<br>" +
+                         "<b>Lat:</b> " + loc.lat + "<br>" +
+                         "<b>Lng:</b> " + loc.lng;
+      
+      if (isLast) popupContent = "<b>Current Location</b><br>" + popupContent;
+      if (isFirst) popupContent = "<b>Start of Route</b><br>" + popupContent;
+      
+      marker.bindPopup(popupContent);
   });
 </script>
 {% endif %}
+{% endblock %}
 
 {% endblock %}
