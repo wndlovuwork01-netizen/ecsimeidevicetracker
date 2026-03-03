@@ -7,10 +7,10 @@ from psycopg2.extras import DictCursor
 SQLITE_DB = os.path.join(os.path.dirname(__file__), "data", "app.db")
 
 def migrate():
-    # Get the Neon connection string from the environment
+    # Priority: 1. Environment Variable, 2. Hardcoded Fallback
     url = os.environ.get("DATABASE_URL", "").strip()
     if not url:
-        raise Exception("DATABASE_URL environment variable is missing or empty.")
+        url = "postgresql://neondb_owner:npg_opw0xS3VkHQt@ep-damp-union-agyj46hm-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
     
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
@@ -23,6 +23,43 @@ def migrate():
     # Connect to PostgreSQL
     pg_conn = psycopg2.connect(url)
     pg_c = pg_conn.cursor()
+
+    # Ensure tables exist in PostgreSQL
+    print("Creating tables in PostgreSQL if they don't exist...")
+    pg_c.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL CHECK(role IN ('admin','viewer')),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            phone TEXT
+        )
+    """)
+    pg_c.execute("""
+        CREATE TABLE IF NOT EXISTS devices (
+            id SERIAL PRIMARY KEY,
+            owner TEXT,
+            imei TEXT UNIQUE,
+            phone TEXT UNIQUE,
+            carrier TEXT,
+            region TEXT,
+            api_token TEXT NOT NULL,
+            last_update TIMESTAMPTZ,
+            last_lat REAL,
+            last_lng REAL
+        )
+    """)
+    pg_c.execute("""
+        CREATE TABLE IF NOT EXISTS locations (
+            id SERIAL PRIMARY KEY,
+            device_id INTEGER NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+            lat REAL NOT NULL,
+            lng REAL NOT NULL,
+            ts TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    """)
+    pg_conn.commit()
 
     # Migrate users
     print("Migrating users...")

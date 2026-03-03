@@ -67,13 +67,10 @@ def ensure_db():
         conn.close()
 
 def db_connect():
+    # Priority: 1. Environment Variable, 2. Hardcoded Fallback
     url = os.environ.get("DATABASE_URL", "").strip()
     if not url:
-        # Fallback for local development if you have a local postgres or want to warn
-        raise RuntimeError(
-            "DATABASE_URL environment variable is missing or empty. "
-            "Please set it in your environment or Render Dashboard."
-        )
+        url = "postgresql://neondb_owner:npg_opw0xS3VkHQt@ep-damp-union-agyj46hm-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
     
     # Fix for platforms providing 'postgres://' (SQLAlchemy/Heroku style)
     if url.startswith("postgres://"):
