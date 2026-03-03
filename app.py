@@ -67,15 +67,25 @@ def ensure_db():
         conn.close()
 
 def db_connect():
-    url = os.environ.get("DATABASE_URL")
+    url = os.environ.get("DATABASE_URL", "").strip()
     if not url:
-        raise RuntimeError("DATABASE_URL environment variable is not set")
-    # Fix for some platforms that provide 'postgres://' instead of 'postgresql://'
+        # Fallback for local development if you have a local postgres or want to warn
+        raise RuntimeError(
+            "DATABASE_URL environment variable is missing or empty. "
+            "Please set it in your environment or Render Dashboard."
+        )
+    
+    # Fix for platforms providing 'postgres://' (SQLAlchemy/Heroku style)
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
-    conn = psycopg2.connect(url)
-    conn.cursor_factory = DictCursor
-    return conn
+    
+    try:
+        conn = psycopg2.connect(url)
+        conn.cursor_factory = DictCursor
+        return conn
+    except Exception as e:
+        app.logger.error(f"Failed to connect to database at {url.split('@')[-1]}: {e}")
+        raise e
 
 
 def lookup_device_db(imei=None, phone=None):
@@ -163,12 +173,21 @@ VONAGE_API_KEY = os.environ.get("VONAGE_API_KEY") or "TzjCqBi6z4VtzNOp"
 VONAGE_API_SECRET = os.environ.get("VONAGE_API_SECRET") or "5OAQwcgoX89WG3Q62yc1j8ZtRJ3WPlxzjbvX9kvoBG3kuVR3Yb"
 VONAGE_FROM_NUMBER = os.environ.get("VONAGE_FROM_NUMBER") or "+263 77 111 2812"
 
+# Global flag to ensure database initialization only happens once per worker
+_db_initialized = False
+
 @app.before_request
 def initialize_database():
-    if not getattr(g, '_database_initialized', False):
-        ensure_db()
-        ensure_initial_admin()
-        g._database_initialized = True
+    global _db_initialized
+    if not _db_initialized:
+        try:
+            ensure_db()
+            ensure_initial_admin()
+            _db_initialized = True
+        except Exception as e:
+            app.logger.error(f"Database initialization failed: {e}")
+            # Don't set _db_initialized to True so it retries on the next request
+            raise e
 
 
 def is_imei(candidate: str) -> bool:

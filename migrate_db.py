@@ -8,9 +8,9 @@ SQLITE_DB = os.path.join(os.path.dirname(__file__), "data", "app.db")
 
 def migrate():
     # Get the Neon connection string from the environment
-    url = os.environ.get("DATABASE_URL")
+    url = os.environ.get("DATABASE_URL", "").strip()
     if not url:
-        raise Exception("DATABASE_URL environment variable not set.")
+        raise Exception("DATABASE_URL environment variable is missing or empty.")
     
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
