@@ -154,14 +154,15 @@ def send_2fa_code(phone, code):
         raise Exception(f"Vonage send failed: {messages[0].get('error-text') if messages else 'unknown'}")
 
 
-# Initialize DB and seed admin at import time
-ensure_db()
-ensure_initial_admin()
-AGENT_DOWNLOAD_URL = os.environ.get("AGENT_DOWNLOAD_URL")
 # Hardcoded Vonage credentials per user request; env vars still override if set
 VONAGE_API_KEY = os.environ.get("VONAGE_API_KEY") or "TzjCqBi6z4VtzNOp"
 VONAGE_API_SECRET = os.environ.get("VONAGE_API_SECRET") or "5OAQwcgoX89WG3Q62yc1j8ZtRJ3WPlxzjbvX9kvoBG3kuVR3Yb"
 VONAGE_FROM_NUMBER = os.environ.get("VONAGE_FROM_NUMBER") or "+263 77 111 2812"
+
+@app.before_first_request
+def initialize_database():
+    ensure_db()
+    ensure_initial_admin()
 
 
 def is_imei(candidate: str) -> bool:
