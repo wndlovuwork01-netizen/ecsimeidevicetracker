@@ -14,44 +14,40 @@ from phonenumbers import geocoder, carrier
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 
+import psycopg2
+from psycopg2.extras import DictCursor
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
-DB_DIR = os.path.join(os.path.dirname(__file__), "data")
-DB_FILE = os.path.join(DB_DIR, "app.db")
-
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 def ensure_db():
-    os.makedirs(DB_DIR, exist_ok=True)
-    conn = sqlite3.connect(DB_FILE)
+    conn = db_connect()
     try:
         c = conn.cursor()
         c.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 username TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
                 role TEXT NOT NULL CHECK(role IN ('admin','viewer')),
-                created_at TEXT NOT NULL
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                phone TEXT
             )
             """
         )
-        # Migration: add 'phone' column to users if missing
-        c.execute("PRAGMA table_info(users)")
-        user_cols = [row[1] for row in c.fetchall()]
-        if "phone" not in user_cols:
-            c.execute("ALTER TABLE users ADD COLUMN phone TEXT")
         c.execute(
             """
             CREATE TABLE IF NOT EXISTS devices (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 owner TEXT,
                 imei TEXT UNIQUE,
                 phone TEXT UNIQUE,
                 carrier TEXT,
                 region TEXT,
                 api_token TEXT NOT NULL,
-                last_update TEXT,
+                last_update TIMESTAMPTZ,
                 last_lat REAL,
                 last_lng REAL
             )
@@ -60,12 +56,11 @@ def ensure_db():
         c.execute(
             """
             CREATE TABLE IF NOT EXISTS locations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                device_id INTEGER NOT NULL,
+                id SERIAL PRIMARY KEY,
+                device_id INTEGER NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
                 lat REAL NOT NULL,
                 lng REAL NOT NULL,
-                ts TEXT NOT NULL,
-                FOREIGN KEY(device_id) REFERENCES devices(id) ON DELETE CASCADE
+                ts TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
             """
         )
@@ -73,11 +68,9 @@ def ensure_db():
     finally:
         conn.close()
 
-
 def db_connect():
-    ensure_db()
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(DATABASE_URL)
+    conn.cursor_factory = DictCursor
     return conn
 
 
@@ -86,9 +79,9 @@ def lookup_device_db(imei=None, phone=None):
     try:
         c = conn.cursor()
         if imei:
-            c.execute("SELECT * FROM devices WHERE imei = ?", (imei,))
+            c.execute("SELECT * FROM devices WHERE imei = %s", (imei,))
         elif phone:
-            c.execute("SELECT * FROM devices WHERE phone = ?", (phone,))
+            c.execute("SELECT * FROM devices WHERE phone = %s", (phone,))
         else:
             return None
         row = c.fetchone()
@@ -98,8 +91,8 @@ def lookup_device_db(imei=None, phone=None):
         c.execute("""
             SELECT lat, lng, ts 
             FROM locations 
-            WHERE device_id = ? 
-              AND ts >= (SELECT datetime(MAX(ts), '-5 hours') FROM locations WHERE device_id = ?)
+            WHERE device_id = %s 
+              AND ts >= (SELECT MAX(ts) - INTERVAL '5 hours' FROM locations WHERE device_id = %s)
             ORDER BY ts ASC
         """, (row["id"], row["id"]))
         locs = [dict(r) for r in c.fetchall()]
@@ -112,12 +105,11 @@ def lookup_device_db(imei=None, phone=None):
     finally:
         conn.close()
 
-
 def get_user_by_username_db(username):
     conn = db_connect()
     try:
         c = conn.cursor()
-        c.execute("SELECT username, password_hash, role, phone FROM users WHERE username = ?", (username,))
+        c.execute("SELECT username, password_hash, role, phone FROM users WHERE username = %s", (username,))
         row = c.fetchone()
         return dict(row) if row else None
     finally:
@@ -136,7 +128,7 @@ def ensure_initial_admin():
             admin_password = os.environ.get("ADMIN_PASSWORD", "admin")
             password_hash = generate_password_hash(admin_password)
             c.execute(
-                "INSERT INTO users (username, password_hash, role, phone, created_at) VALUES (?, ?, 'admin', NULL, ?)",
+                "INSERT INTO users (username, password_hash, role, phone, created_at) VALUES (%s, %s, 'admin', NULL, %s)",
                 (admin_username, password_hash, datetime.utcnow().isoformat()),
             )
             conn.commit()
@@ -267,12 +259,12 @@ def add_device():
             c = conn.cursor()
             # Check unique constraints
             if imei:
-                c.execute("SELECT 1 FROM devices WHERE imei = ?", (imei,))
+                c.execute("SELECT 1 FROM devices WHERE imei = %s", (imei,))
                 if c.fetchone():
                     flash("A device with the same IMEI already exists.", "error")
                     return render_template("add.html", form={"owner": owner, "imei": imei, "phone": phone})
             if phone:
-                c.execute("SELECT 1 FROM devices WHERE phone = ?", (phone,))
+                c.execute("SELECT 1 FROM devices WHERE phone = %s", (phone,))
                 if c.fetchone():
                     flash("A device with the same phone already exists.", "error")
                     return render_template("add.html", form={"owner": owner, "imei": imei, "phone": phone})
@@ -281,7 +273,7 @@ def add_device():
             region_name = geocoder.description_for_number(phonenumbers.parse(phone), "en") if phone else None
             api_token = secrets.token_urlsafe(24)
             c.execute(
-                "INSERT INTO devices (owner, imei, phone, carrier, region, api_token, last_update, last_lat, last_lng) VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, NULL)",
+                "INSERT INTO devices (owner, imei, phone, carrier, region, api_token) VALUES (%s, %s, %s, %s, %s, %s)",
                 (owner or None, imei or None, phone or None, carrier_name, region_name, api_token),
             )
             conn.commit()
@@ -343,13 +335,13 @@ def validate_device():
         c = conn.cursor()
         row = None
         if imei:
-            c.execute("SELECT api_token FROM devices WHERE imei = ?", (imei,))
+            c.execute("SELECT api_token FROM devices WHERE imei = %s", (imei,))
             row = c.fetchone()
         
         if not row and phone:
             normalized = normalize_phone(phone)
             if normalized:
-                c.execute("SELECT api_token FROM devices WHERE phone = ?", (normalized,))
+                c.execute("SELECT api_token FROM devices WHERE phone = %s", (normalized,))
                 row = c.fetchone()
 
         if not row:
@@ -387,13 +379,13 @@ def location_update():
         # Fetch device - try IMEI first, then phone
         device = None
         if imei:
-            c.execute("SELECT id, api_token FROM devices WHERE imei = ?", (imei,))
+            c.execute("SELECT id, api_token FROM devices WHERE imei = %s", (imei,))
             device = c.fetchone()
         
         if not device and phone:
             normalized = normalize_phone(phone)
             if normalized:
-                c.execute("SELECT id, api_token FROM devices WHERE phone = ?", (normalized,))
+                c.execute("SELECT id, api_token FROM devices WHERE phone = %s", (normalized,))
                 device = c.fetchone()
             else:
                 print(f"DEBUG: Could not normalize phone: {phone}")
@@ -410,17 +402,16 @@ def location_update():
         print(f"DEBUG: Updating location for device {device_id} at {lat}, {lng}")
 
         # Insert history entry
-        c.execute("""
-            INSERT INTO locations (device_id, lat, lng, ts)
-            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-        """, (device_id, lat, lng))
+        c.execute(
+            "INSERT INTO locations (device_id, lat, lng, ts) VALUES (%s, %s, %s, NOW())", 
+            (device_id, lat, lng)
+        )
 
         # Update last known location
-        c.execute("""
-            UPDATE devices
-            SET last_lat = ?, last_lng = ?, last_update = CURRENT_TIMESTAMP
-            WHERE id = ?
-        """, (lat, lng, device_id))
+        c.execute(
+            "UPDATE devices SET last_lat = %s, last_lng = %s, last_update = NOW() WHERE id = %s",
+            (lat, lng, device_id)
+        )
 
         conn.commit()
 
@@ -445,19 +436,19 @@ def device_token():
             c = conn.cursor()
             device_row = None
             if is_imei(query):
-                c.execute("SELECT * FROM devices WHERE imei = ?", (query,))
+                c.execute("SELECT * FROM devices WHERE imei = %s", (query,))
                 device_row = c.fetchone()
             else:
                 normalized = normalize_phone(query)
                 if normalized:
-                    c.execute("SELECT * FROM devices WHERE phone = ?", (normalized,))
+                    c.execute("SELECT * FROM devices WHERE phone = %s", (normalized,))
                     device_row = c.fetchone()
             if not device_row:
                 flash("Device not found.", "error")
             else:
                 if request.form.get("regen") == "1":
                     new_token = secrets.token_urlsafe(24)
-                    c.execute("UPDATE devices SET api_token = ? WHERE id = ?", (new_token, device_row["id"]))
+                    c.execute("UPDATE devices SET api_token = %s WHERE id = %s", (new_token, device_row["id"]))
                     conn.commit()
                     device_row = dict(device_row)
                     device_row["api_token"] = new_token
@@ -550,13 +541,13 @@ def create_user():
         conn = db_connect()
         try:
             c = conn.cursor()
-            c.execute("SELECT 1 FROM users WHERE username = ?", (username,))
+            c.execute("SELECT 1 FROM users WHERE username = %s", (username,))
             if c.fetchone():
                 flash("User already exists.", "error")
                 return render_template("user_create.html")
             c.execute(
-                "INSERT INTO users (username, password_hash, role, phone, created_at) VALUES (?, ?, ?, ?, ?)",
-                (username, generate_password_hash(password), role, phone, datetime.utcnow().isoformat()),
+                "INSERT INTO users (username, password_hash, role, phone) VALUES (%s, %s, %s, %s)",
+                (username, generate_password_hash(password), role, phone),
             )
             conn.commit()
         finally:
@@ -633,7 +624,7 @@ def export():
         c.execute("SELECT * FROM devices")
         devices = [dict(r) for r in c.fetchall()]
         for d in devices:
-            c.execute("SELECT lat, lng, ts FROM locations WHERE device_id = ? ORDER BY ts ASC", (d["id"],))
+            c.execute("SELECT lat, lng, ts FROM locations WHERE device_id = %s ORDER BY ts ASC", (d["id"],))
             d["locations"] = [dict(r) for r in c.fetchall()]
             d["last_location"] = {"lat": d["last_lat"], "lng": d["last_lng"]} if d.get(
                 "last_lat") is not None and d.get("last_lng") is not None else None
@@ -666,15 +657,15 @@ def import_data():
                 imei = d.get("imei")
                 phone = d.get("phone")
                 if imei:
-                    c.execute("SELECT 1 FROM devices WHERE imei = ?", (imei,))
+                    c.execute("SELECT 1 FROM devices WHERE imei = %s", (imei,))
                     if c.fetchone():
                         continue
                 if phone:
-                    c.execute("SELECT 1 FROM devices WHERE phone = ?", (phone,))
+                    c.execute("SELECT 1 FROM devices WHERE phone = %s", (phone,))
                     if c.fetchone():
                         continue
                 c.execute(
-                    "INSERT INTO devices (owner, imei, phone, carrier, region, api_token, last_update, last_lat, last_lng) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO devices (owner, imei, phone, carrier, region, api_token, last_update, last_lat, last_lng) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
                     (
                         d.get("owner"),
                         imei,
@@ -687,12 +678,12 @@ def import_data():
                         (d.get("last_location") or {}).get("lng"),
                     ),
                 )
+                new_id = c.fetchone()["id"]
                 conn.commit()
                 # Insert locations history if present
-                new_id = c.lastrowid
                 for loc in d.get("locations", []) or []:
                     c.execute(
-                        "INSERT INTO locations (device_id, lat, lng, ts) VALUES (?, ?, ?, ?)",
+                        "INSERT INTO locations (device_id, lat, lng, ts) VALUES (%s, %s, %s, %s)",
                         (new_id, float(loc.get("lat")), float(loc.get("lng")), loc.get("ts")),
                     )
                 conn.commit()

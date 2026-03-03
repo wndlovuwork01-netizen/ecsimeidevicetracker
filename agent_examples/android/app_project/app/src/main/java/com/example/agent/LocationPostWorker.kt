@@ -24,23 +24,9 @@ class LocationPostWorker(
         val serverRoot = inputData.getString("serverRoot") ?: return Result.failure()
         val lat = inputData.getDouble("lat", 0.0)
         val lng = inputData.getDouble("lng", 0.0)
-
-        // ALWAYS load fresh saved credentials
-        val masterKey = MasterKey.Builder(applicationContext)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-
-        val prefs = EncryptedSharedPreferences.create(
-            applicationContext,
-            "agent_prefs",
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-
-        val imei = prefs.getString("imei", "") ?: ""
-        val phone = prefs.getString("phone", "") ?: ""
-        val token = prefs.getString("token", "") ?: ""
+        val imei = inputData.getString("imei") ?: ""
+        val phone = inputData.getString("phone") ?: ""
+        val token = inputData.getString("token") ?: ""
 
         val json = JSONObject().apply {
             put("imei", imei)
@@ -72,12 +58,17 @@ class LocationPostWorker(
             serverRoot: String,
             lat: Double,
             lng: Double,
-
+            imei: String,
+            phone: String,
+            token: String
         ) {
             val data = workDataOf(
                 "serverRoot" to serverRoot,
                 "lat" to lat,
                 "lng" to lng,
+                "imei" to imei,
+                "phone" to phone,
+                "token" to token
             )
 
             val request = OneTimeWorkRequestBuilder<LocationPostWorker>()

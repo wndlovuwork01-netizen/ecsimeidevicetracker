@@ -147,6 +147,9 @@ class TrackingService : Service() {
             serverRoot = serverRoot,
             lat = lat,
             lng = lng,
+            imei = deviceImei,
+            phone = devicePhone,
+            token = deviceToken
         )
 
         Log.d(TAG, "Scheduled location POST via WorkManager: lat=$lat lng=$lng")
