@@ -2,7 +2,6 @@ import json
 import os
 import secrets
 from datetime import datetime
-import sqlite3
 import base64
 
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session, send_file, g
@@ -19,7 +18,6 @@ from psycopg2.extras import DictCursor
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
-DATABASE_URL = os.environ.get("DATABASE_URL")
 
 def ensure_db():
     conn = db_connect()
@@ -69,7 +67,13 @@ def ensure_db():
         conn.close()
 
 def db_connect():
-    conn = psycopg2.connect(DATABASE_URL)
+    url = os.environ.get("DATABASE_URL")
+    if not url:
+        raise RuntimeError("DATABASE_URL environment variable is not set")
+    # Fix for some platforms that provide 'postgres://' instead of 'postgresql://'
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    conn = psycopg2.connect(url)
     conn.cursor_factory = DictCursor
     return conn
 

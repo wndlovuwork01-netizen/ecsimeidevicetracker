@@ -3,22 +3,25 @@ import sqlite3
 import psycopg2
 from psycopg2.extras import DictCursor
 
-# Get the Neon connection string from the environment
-DATABASE_URL = os.environ.get("DATABASE_URL")
-if not DATABASE_URL:
-    raise Exception("DATABASE_URL environment variable not set.")
-
 # Path to the local SQLite database
 SQLITE_DB = os.path.join(os.path.dirname(__file__), "data", "app.db")
 
 def migrate():
+    # Get the Neon connection string from the environment
+    url = os.environ.get("DATABASE_URL")
+    if not url:
+        raise Exception("DATABASE_URL environment variable not set.")
+    
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+
     # Connect to SQLite
     sqlite_conn = sqlite3.connect(SQLITE_DB)
     sqlite_conn.row_factory = sqlite3.Row
     sqlite_c = sqlite_conn.cursor()
 
     # Connect to PostgreSQL
-    pg_conn = psycopg2.connect(DATABASE_URL)
+    pg_conn = psycopg2.connect(url)
     pg_c = pg_conn.cursor()
 
     # Migrate users
