@@ -5,7 +5,7 @@ from datetime import datetime
 import sqlite3
 import base64
 
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session, send_file
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session, send_file, g
 import io
 import zipfile
 
@@ -159,10 +159,12 @@ VONAGE_API_KEY = os.environ.get("VONAGE_API_KEY") or "TzjCqBi6z4VtzNOp"
 VONAGE_API_SECRET = os.environ.get("VONAGE_API_SECRET") or "5OAQwcgoX89WG3Q62yc1j8ZtRJ3WPlxzjbvX9kvoBG3kuVR3Yb"
 VONAGE_FROM_NUMBER = os.environ.get("VONAGE_FROM_NUMBER") or "+263 77 111 2812"
 
-@app.before_first_request
+@app.before_request
 def initialize_database():
-    ensure_db()
-    ensure_initial_admin()
+    if not getattr(g, '_database_initialized', False):
+        ensure_db()
+        ensure_initial_admin()
+        g._database_initialized = True
 
 
 def is_imei(candidate: str) -> bool:
